@@ -13,6 +13,7 @@ import difflib
 import os
 import smtplib
 import sys
+import time
 from email.message import EmailMessage
 from pathlib import Path
 
@@ -96,6 +97,30 @@ def send_email(subject, body):
 
 
 def main():
+    """Check repeatedly: every CHECK_EVERY_SECONDS for RUN_MINUTES (0 = check once)."""
+    run_minutes = float(env("RUN_MINUTES", "0"))
+    every = float(env("CHECK_EVERY_SECONDS", "120"))
+    stop_at = time.time() + run_minutes * 60
+    checks = failures = 0
+    while True:
+        started = time.time()
+        checks += 1
+        try:
+            check_once()
+        except SystemExit:
+            raise
+        except Exception as exc:  # site hiccup: log it and try again next round
+            failures += 1
+            print(f"Check failed: {exc!r}")
+        if time.time() + every > stop_at:
+            break
+        time.sleep(max(0, every - (time.time() - started)))
+    print(f"Done: {checks} checks, {failures} failed.")
+    if failures == checks:
+        sys.exit("Every check failed - see the log above.")
+
+
+def check_once():
     url = env("WATCH_URL")
     location = env("WATCH_LOCATION", "Kozhikode")
     dates = [d.strip() for d in env("WATCH_DATES", "Thu 17,Fri 18").split(",") if d.strip()]
