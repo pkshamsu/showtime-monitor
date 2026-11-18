@@ -5,7 +5,8 @@ on:
     # Each run keeps checking every 2 minutes for 50 minutes.
     # A new run is queued every 15 minutes and starts as soon as the
     # current one finishes, so there is no gap even when GitHub runs late.
-    - cron: "*/15 * * * *"
+    # Odd minutes avoid the top-of-the-hour rush when GitHub drops the most runs.
+    - cron: "7,22,37,52 * * * *"
   workflow_dispatch: # lets you run it by hand from the Actions tab
 
 permissions:
